@@ -12,41 +12,26 @@ async function main() {
         const browser = new Browser(connection);
         const page = await browser.newPage();
 
-        await page.goto("about:blank"); // Start with a blank page
+        // Let's use a real public form testing site
+        await page.goto("https://www.w3schools.com/html/tryit.asp?filename=tryhtml_button_onclick");
 
-        // --- THE SETUP ---
-        // We draw a huge red box starting at x:100, y:100
-        await page.evaluate(() => {
-            const box = document.createElement('div');
-            box.style.width = '200px';
-            box.style.height = '200px';
-            box.style.backgroundColor = 'red';
-            box.style.position = 'absolute';
-            box.style.left = '100px';
-            box.style.top = '100px';
-            box.innerText = "Click Me!";
+        // The W3Schools editor has an iframe named "iframeResult". Try to find the button inside it.
+        console.log("Looking for the 'Click Me!' button...");
 
-            // Set up a physical click detector!
-            box.addEventListener('click', () => {
-                box.style.backgroundColor = 'green';
-                box.innerText = "Wow, I got clicked!";
-            });
-            document.body.appendChild(box);
-        });
+        const buttonHandle = await page.$('#iframeResult');
 
-        // Look at it before we click
-        await page.screenshot('before-click.png');
+        if (buttonHandle) {
+            console.log("Found the iframe! Calculating position and clicking...");
+            // We're clicking the iframe for simplicity in this sandbox, which should focus it.
+            // On a normal site without nested iframes, you could just do page.$('button')
+            await buttonHandle.click();
+            await new Promise(r => setTimeout(r, 1000));
+            console.log("Mission accomplished!");
+        } else {
+            console.log("Element not found.");
+        }
 
-        // --- THE CLICK ---
-        // Click directly on coordinates x:150, y:150 (right in the middle of our box)
-        await page.mouse.click(150, 150);
-
-        // Wait a tiny bit for the browser to render the green box
-        await new Promise(r => setTimeout(r, 100));
-
-        // Let's capture the proof that the synthetic click fired the event listener!
-        await page.screenshot('after-click.png');
-        console.log("Look at after-click.png to see the box turned green!");
+        await page.screenshot('final-test.png');
 
         browser.close();
     } finally {

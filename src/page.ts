@@ -3,6 +3,7 @@ import { Connection } from './connection';
 import * as fs from 'fs';
 import { format } from 'path';
 import { Mouse } from './mouse';
+import { ElementHandle } from './element-handle';
 
 export class Page {
     public mouse: Mouse;
@@ -69,5 +70,18 @@ export class Page {
     }
 
 
+    public async $(selector: string): Promise<ElementHandle | null> {
+        const expression = `document.querySelector('${selector}')`;
+        const response = await this.send('Runtime.evaluate', {
+            expression,
+            returnByValue: false
+        });
+        const objectId = response.result.objectId;
+        if (!objectId || response.result.subtype === 'null') {
+            return null;
+        }
+
+        return new ElementHandle(this.connection, this.sessionId, this.mouse, objectId);
+    }
 
 }
