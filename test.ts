@@ -12,22 +12,41 @@ async function main() {
         const browser = new Browser(connection);
         const page = await browser.newPage();
 
-        // 1. Navigate and WAIT for the page to load
-        await page.goto("https://news.ycombinator.com/");
+        await page.goto("about:blank"); // Start with a blank page
 
-        // 2. Evaluate JavaScript inside the browser to extract data
-        const topStoryTitle = await page.evaluate(() => {
-            // This code runs inside the browser, so we have access to `document`!
-            const firstTitleElement = document.querySelector('.titleline > a');
-            return firstTitleElement ? firstTitleElement.textContent : 'No title found';
+        // --- THE SETUP ---
+        // We draw a huge red box starting at x:100, y:100
+        await page.evaluate(() => {
+            const box = document.createElement('div');
+            box.style.width = '200px';
+            box.style.height = '200px';
+            box.style.backgroundColor = 'red';
+            box.style.position = 'absolute';
+            box.style.left = '100px';
+            box.style.top = '100px';
+            box.innerText = "Click Me!";
+
+            // Set up a physical click detector!
+            box.addEventListener('click', () => {
+                box.style.backgroundColor = 'green';
+                box.innerText = "Wow, I got clicked!";
+            });
+            document.body.appendChild(box);
         });
 
-        console.log('--- EXECUTED JS IN BROWSER ---');
-        console.log('Top Story on Hacker News:', topStoryTitle);
-        console.log('------------------------------');
+        // Look at it before we click
+        await page.screenshot('before-click.png');
 
-        // 3. Take a screenshot
-        await page.screenshot('hackernews.png');
+        // --- THE CLICK ---
+        // Click directly on coordinates x:150, y:150 (right in the middle of our box)
+        await page.mouse.click(150, 150);
+
+        // Wait a tiny bit for the browser to render the green box
+        await new Promise(r => setTimeout(r, 100));
+
+        // Let's capture the proof that the synthetic click fired the event listener!
+        await page.screenshot('after-click.png');
+        console.log("Look at after-click.png to see the box turned green!");
 
         browser.close();
     } finally {

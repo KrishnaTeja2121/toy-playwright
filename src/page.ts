@@ -2,12 +2,16 @@ import { resolve } from 'dns';
 import { Connection } from './connection';
 import * as fs from 'fs';
 import { format } from 'path';
+import { Mouse } from './mouse';
 
 export class Page {
+    public mouse: Mouse;
     constructor(
         private connection: Connection,
         private sessionId: string
-    ) { }
+    ) {
+        this.mouse = new Mouse(connection, sessionId);
+    }
 
     private send(method: string, params: object = {}) {
         return this.connection.send(method, params, this.sessionId);
@@ -29,6 +33,7 @@ export class Page {
 
         // wait for our loadEventFired promise to trigger
         await loadPromise;
+        console.log(`Page finished loading!`);
     }
 
     // 2. RUN JAVASCRIPT IN THE BROWSER
