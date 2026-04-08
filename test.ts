@@ -1,42 +1,38 @@
 import { BrowserLauncher } from "./src/launcher";
-import { Connection } from './src/connection';
+import { Connection } from "./src/connection";
 import { Browser } from "./src/browser";
 
 async function main() {
     const launcher = new BrowserLauncher();
-
-
     try {
         const wsEndpoint = await launcher.launch();
-
-        console.log(`Success ! Connected to browser at ${wsEndpoint}`);
-
-        // 1. Establish JSON-RPC Connection
         const connection = new Connection(wsEndpoint);
         await connection.connect();
-        console.log('Websocket Connected!');
 
-        // 2. Send our verify first CDP command
-        console.log('Requesting Browser Version...');
-        const versionInfo = await connection.send('Browser.getVersion');
-        console.log('Browser Version: ', versionInfo);
-
-        //3. Browser coonection test
         const browser = new Browser(connection);
-
-        //The magic happens here!
         const page = await browser.newPage();
-        await page.goto('https://google.com');
-        console.log('Wait 5 seconds to looks at the page....');
 
-        await new Promise(r => setTimeout(r, 3000));
+        // 1. Navigate and WAIT for the page to load
+        await page.goto("https://news.ycombinator.com/");
+
+        // 2. Evaluate JavaScript inside the browser to extract data
+        const topStoryTitle = await page.evaluate(() => {
+            // This code runs inside the browser, so we have access to `document`!
+            const firstTitleElement = document.querySelector('.titleline > a');
+            return firstTitleElement ? firstTitleElement.textContent : 'No title found';
+        });
+
+        console.log('--- EXECUTED JS IN BROWSER ---');
+        console.log('Top Story on Hacker News:', topStoryTitle);
+        console.log('------------------------------');
+
+        // 3. Take a screenshot
+        await page.screenshot('hackernews.png');
+
         browser.close();
-    } catch (e) {
-        console.error('Error during test:', e);
-    }
-    finally {
-
+    } finally {
         launcher.close();
     }
 }
+
 main().catch(console.error);
